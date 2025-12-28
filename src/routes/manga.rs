@@ -8,7 +8,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::sync::Arc;
-use crate::models::{Manga, MangaDetail, MangaFilter, Pagination};
+use crate::models::{Manga, MangaDetail, MangaFilter, Pagination, Chapter};
 use crate::Response;
 
 pub fn router() -> Router {
