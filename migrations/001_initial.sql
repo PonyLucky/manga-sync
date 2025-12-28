@@ -1,19 +1,19 @@
 -- Création des tables
 
 CREATE TABLE manga (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     cover TEXT,
     cover_small TEXT
 );
 
 CREATE TABLE website (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     domain TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE source (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     manga_id INTEGER NOT NULL,
     website_id INTEGER NOT NULL,
     path TEXT NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE source (
 );
 
 CREATE TABLE chapter (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     manga_id INTEGER NOT NULL,
     number TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
