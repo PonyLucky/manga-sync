@@ -1,0 +1,38 @@
+use serde::{Deserialize, Serialize};
+use chrono::NaiveDateTime;
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct Manga {
+    pub id: i64,
+    pub name: String,
+    pub cover: String,
+    pub cover_small: String,
+}
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct Website {
+    pub id: i64,
+    pub domain: String,
+}
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct Source {
+    pub id: i64,
+    pub manga_id: i64,
+    pub website_id: i64,
+    pub path: String,
+}
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct Chapter {
+    pub id: i64,
+    pub manga_id: i64,
+    pub number: String,
+    pub updated_at: NaiveDateTime,
+}
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct Setting {
+    pub key: String,
+    pub value: String,
+}
