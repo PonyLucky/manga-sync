@@ -29,6 +29,9 @@ impl KeyManager {
     }
 
     fn generate_new_key(&mut self) -> Result<()> {
+        if let Some(parent) = Path::new(&self.key_path).parent() {
+            fs::create_dir_all(parent)?;
+        }
         let rng = rand::thread_rng();
         let length = rand::thread_rng().gen_range(24..=64);
         let key: String = rng
