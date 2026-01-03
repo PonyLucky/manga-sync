@@ -5,6 +5,9 @@ info:
   license:
     name: ''
   version: 1.0.0
+servers:
+- url: http://localhost:7783
+  description: Local development server
 paths:
   /manga:
     get:

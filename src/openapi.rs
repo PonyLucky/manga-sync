@@ -10,6 +10,9 @@ use crate::utils::response::ApiResponse;
         description = "A self-hosted REST API to manage manga reading progress.",
         version = "1.0.0"
     ),
+    servers(
+        (url = "http://localhost:7783", description = "Local development server")
+    ),
     paths(
         handlers::manga::list_manga,
         handlers::manga::get_manga,
