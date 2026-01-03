@@ -26,3 +26,4 @@ tracing-subscriber = "0.3"
 dotenvy = "0.15"
 anyhow = "1.0"
 tower = "0.5.2"
+utoipa = { version = "4.2", features = ["yaml"] }

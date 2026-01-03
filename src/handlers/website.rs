@@ -7,6 +7,18 @@ use serde::Serialize;
 use crate::utils::response::{ApiResponse, ApiError};
 use crate::models::Website;
 
+use utoipa::ToSchema;
+
+#[utoipa::path(
+    get,
+    path = "/website",
+    responses(
+        (status = 200, description = "List all websites", body = ApiResponse<Vec<Website>>)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn list_websites(
     State(pool): State<SqlitePool>,
 ) -> Result<Json<ApiResponse<Vec<Website>>>, ApiError> {
@@ -18,11 +30,24 @@ pub async fn list_websites(
     Ok(Json(ApiResponse::success(websites)))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct Existence {
     pub existing: bool,
 }
 
+#[utoipa::path(
+    get,
+    path = "/website/{domain}",
+    responses(
+        (status = 200, description = "Check if website exists", body = ApiResponse<Existence>)
+    ),
+    params(
+        ("domain" = String, Path, description = "Website domain")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn check_website(
     State(pool): State<SqlitePool>,
     Path(domain): Path<String>,
@@ -38,6 +63,19 @@ pub async fn check_website(
     })))
 }
 
+#[utoipa::path(
+    post,
+    path = "/website/{domain}",
+    responses(
+        (status = 200, description = "Website registered successfully", body = ApiResponse<()>)
+    ),
+    params(
+        ("domain" = String, Path, description = "Website domain")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn create_website(
     State(pool): State<SqlitePool>,
     Path(domain): Path<String>,

@@ -7,14 +7,17 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::utils::response::{ApiResponse, ApiError};
 
-#[derive(Deserialize)]
+use utoipa::{ToSchema, IntoParams};
+
+#[derive(Deserialize, ToSchema, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct Pagination {
     pub size: Option<i64>,
     pub page: Option<i64>,
     pub filter: Option<Vec<HashMap<String, String>>>,
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Serialize, sqlx::FromRow, ToSchema)]
 pub struct MangaListItem {
     pub id: i64,
     pub name: String,
@@ -22,6 +25,17 @@ pub struct MangaListItem {
     pub current_chapter: Option<String>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/manga",
+    params(Pagination),
+    responses(
+        (status = 200, description = "List manga successfully", body = ApiResponse<Vec<MangaListItem>>)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn list_manga(
     State(pool): State<SqlitePool>,
     Query(pagination): Query<Pagination>,
@@ -79,7 +93,7 @@ pub async fn list_manga(
     Ok(Json(ApiResponse::success(manga_list)))
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Serialize, sqlx::FromRow, ToSchema)]
 pub struct MangaDetail {
     pub id: i64,
     pub name: String,
@@ -88,6 +102,20 @@ pub struct MangaDetail {
     pub last_read_at: Option<chrono::NaiveDateTime>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/manga/{id}",
+    responses(
+        (status = 200, description = "Get manga details", body = ApiResponse<MangaDetail>),
+        (status = 404, description = "Manga not found")
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_manga(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -109,6 +137,19 @@ pub async fn get_manga(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/manga/{id}/source",
+    responses(
+        (status = 200, description = "Get manga sources", body = ApiResponse<Vec<String>>)
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_manga_sources(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -123,12 +164,25 @@ pub async fn get_manga_sources(
     Ok(Json(ApiResponse::success(paths)))
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Serialize, sqlx::FromRow, ToSchema)]
 pub struct HistoryItem {
     pub number: String,
     pub updated_at: chrono::NaiveDateTime,
 }
 
+#[utoipa::path(
+    get,
+    path = "/manga/{id}/history",
+    responses(
+        (status = 200, description = "Get manga reading history", body = ApiResponse<Vec<HistoryItem>>)
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_manga_history(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -144,7 +198,7 @@ pub async fn get_manga_history(
     Ok(Json(ApiResponse::success(history)))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateManga {
     pub name: String,
     pub cover: String,
@@ -153,6 +207,17 @@ pub struct CreateManga {
     pub website_domain: Option<String>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/manga",
+    request_body = CreateManga,
+    responses(
+        (status = 200, description = "Manga created successfully", body = ApiResponse<()>)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn create_manga(
     State(pool): State<SqlitePool>,
     Json(payload): Json<CreateManga>,
@@ -198,7 +263,7 @@ pub async fn create_manga(
     Ok(Json(ApiResponse::success_null()))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct UpdateManga {
     pub name: Option<String>,
     pub cover: Option<String>,
@@ -208,6 +273,21 @@ pub struct UpdateManga {
     pub chapter_number: Option<String>,
 }
 
+#[utoipa::path(
+    patch,
+    path = "/manga/{id}",
+    request_body = UpdateManga,
+    responses(
+        (status = 200, description = "Manga updated successfully", body = ApiResponse<()>),
+        (status = 404, description = "Manga not found")
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn update_manga(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -266,6 +346,20 @@ pub async fn update_manga(
     Ok(Json(ApiResponse::success_null()))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/manga/{id}",
+    responses(
+        (status = 200, description = "Manga deleted successfully", body = ApiResponse<()>),
+        (status = 404, description = "Manga not found")
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn delete_manga(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -283,6 +377,21 @@ pub async fn delete_manga(
     Ok(Json(ApiResponse::success_null()))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/manga/{id}/source/{domain}",
+    responses(
+        (status = 200, description = "Manga source deleted successfully", body = ApiResponse<()>),
+        (status = 404, description = "Manga or source not found")
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID"),
+        ("domain" = String, Path, description = "Website domain")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn delete_manga_source(
     State(pool): State<SqlitePool>,
     Path((id, domain)): Path<(i64, String)>,

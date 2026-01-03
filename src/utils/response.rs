@@ -4,8 +4,9 @@ use axum::{
     Json,
     http::StatusCode,
 };
+use utoipa::ToSchema;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ApiResponse<T> {
     pub status: String,
     pub message: String,

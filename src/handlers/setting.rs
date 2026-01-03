@@ -6,6 +6,16 @@ use sqlx::{SqlitePool, Row};
 use std::collections::HashMap;
 use crate::utils::response::{ApiResponse, ApiError};
 
+#[utoipa::path(
+    get,
+    path = "/setting",
+    responses(
+        (status = 200, description = "List all settings", body = ApiResponse<HashMap<String, String>>)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn list_settings(
     State(pool): State<SqlitePool>,
 ) -> Result<Json<ApiResponse<HashMap<String, String>>>, ApiError> {
@@ -18,6 +28,20 @@ pub async fn list_settings(
     Ok(Json(ApiResponse::success(map)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/setting/{key}",
+    request_body = String,
+    responses(
+        (status = 200, description = "Setting updated successfully", body = ApiResponse<()>)
+    ),
+    params(
+        ("key" = String, Path, description = "Setting key")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn update_setting(
     State(pool): State<SqlitePool>,
     Path(key): Path<String>,

@@ -35,7 +35,16 @@ On first startup, the API generates a random key (24–64 characters) if `secret
 
 ### Installation & Usage
 
-#### Using Docker (Recommended)
+#### Using Makefile (Recommended for development)
+
+The project includes a `Makefile` to simplify common tasks:
+- `make run`: Run the application locally.
+- `make test`: Run all tests.
+- `make docker-build`: Build the Docker image.
+- `make docker-run`: Run the container with a persistent volume.
+- `make openapi-update`: Reminds you to keep the OpenAPI spec updated.
+
+#### Using Docker
 
 1. Create a `secret` directory to store your database and API key:
    ```bash
