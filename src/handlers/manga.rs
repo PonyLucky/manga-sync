@@ -261,31 +261,53 @@ pub async fn update_manga(
             .map_err(|e| ApiError::Internal(e.to_string()))?;
     }
 
-    if let Some(chapter_num) = payload.chapter_number {
-        let existing = sqlx::query("SELECT id FROM chapter WHERE manga_id = ? AND number = ?")
-            .bind(id)
-            .bind(&chapter_num)
-            .fetch_optional(&mut *tx)
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string()))?;
+    tx.commit().await.map_err(|e| ApiError::Internal(e.to_string()))?;
 
-        if let Some(c) = existing {
-            sqlx::query("UPDATE chapter SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-                .bind(c.get::<i64, _>("id"))
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| ApiError::Internal(e.to_string()))?;
-        } else {
-            sqlx::query("INSERT INTO chapter (manga_id, number) VALUES (?, ?)")
-                .bind(id)
-                .bind(chapter_num)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| ApiError::Internal(e.to_string()))?;
-        }
+    Ok(Json(ApiResponse::success_null()))
+}
+
+pub async fn delete_manga(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    let result = sqlx::query("DELETE FROM manga WHERE id = ?")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Manga not found".into()));
     }
 
-    tx.commit().await.map_err(|e| ApiError::Internal(e.to_string()))?;
+    Ok(Json(ApiResponse::success_null()))
+}
+
+pub async fn delete_manga_source(
+    State(pool): State<SqlitePool>,
+    Path((id, domain)): Path<(i64, String)>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    let website = sqlx::query("SELECT id FROM website WHERE domain = ?")
+        .bind(&domain)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    let website_id = match website {
+        Some(w) => w.get::<i64, _>("id"),
+        None => return Err(ApiError::NotFound("Website domain not found".into())),
+    };
+
+    let result = sqlx::query("DELETE FROM source WHERE manga_id = ? AND website_id = ?")
+        .bind(id)
+        .bind(website_id)
+        .execute(&pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Source not found for this manga".into()));
+    }
 
     Ok(Json(ApiResponse::success_null()))
 }
