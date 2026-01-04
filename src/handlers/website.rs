@@ -98,3 +98,34 @@ pub async fn create_website(
 
     Ok(Json(ApiResponse::success_null()))
 }
+
+#[utoipa::path(
+    delete,
+    path = "/website/{domain}",
+    responses(
+        (status = 200, description = "Website deleted successfully", body = ApiResponse<()>),
+        (status = 404, description = "Website not found")
+    ),
+    params(
+        ("domain" = String, Path, description = "Website domain")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn delete_website(
+    State(pool): State<SqlitePool>,
+    Path(domain): Path<String>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    let result = sqlx::query("DELETE FROM website WHERE domain = ?")
+        .bind(domain)
+        .execute(&pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Website not found".into()));
+    }
+
+    Ok(Json(ApiResponse::success_null()))
+}

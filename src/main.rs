@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/manga/:id/source/:domain", delete(handlers::manga::delete_manga_source))
         .route("/manga/:id/history", get(handlers::manga::get_manga_history))
         .route("/website", get(handlers::website::list_websites))
-        .route("/website/:domain", get(handlers::website::check_website).post(handlers::website::create_website))
+        .route("/website/:domain", get(handlers::website::check_website).post(handlers::website::create_website).delete(handlers::website::delete_website))
         .route("/setting", get(handlers::setting::list_settings))
         .route("/setting/:key", post(handlers::setting::update_setting))
         .layer(middleware::from_fn_with_state(key_manager.clone(), auth_middleware))

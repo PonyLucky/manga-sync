@@ -4,7 +4,7 @@ mod tests {
         body::Body,
         http::{Request, StatusCode},
         Router,
-        routing::{get, post},
+        routing::{get},
     };
     use tower::ServiceExt;
     use sqlx::SqlitePool;
@@ -20,7 +20,7 @@ mod tests {
             .route("/manga/:id", get(handlers::manga::get_manga).patch(handlers::manga::update_manga).delete(handlers::manga::delete_manga))
             .route("/manga/:id/source", get(handlers::manga::get_manga_sources))
             .route("/manga/:id/source/:domain", axum::routing::delete(handlers::manga::delete_manga_source))
-            .route("/website/:domain", post(handlers::website::create_website))
+            .route("/website/:domain", get(handlers::website::check_website).post(handlers::website::create_website).delete(handlers::website::delete_website))
             .with_state(pool.clone());
 
         (app, pool)
@@ -128,5 +128,114 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_delete_website() {
+        let (app, pool) = setup_app_no_auth().await;
+
+        // Create a website
+        sqlx::query("INSERT INTO website (domain) VALUES (?)")
+            .bind("example.com")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        // Delete it
+        let response = app.clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/website/example.com")
+                    .method("DELETE")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Verify it's gone
+        let check = sqlx::query("SELECT id FROM website WHERE domain = 'example.com'")
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+        assert!(check.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_delete_website_not_found() {
+        let (app, _pool) = setup_app_no_auth().await;
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/website/nonexistent.com")
+                    .method("DELETE")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_delete_website_cascade() {
+        let (app, pool) = setup_app_no_auth().await;
+
+        // Create a manga
+        sqlx::query("INSERT INTO manga (name, cover, cover_small) VALUES (?, ?, ?)")
+            .bind("Test Manga")
+            .bind("cover.jpg")
+            .bind("cover_small.jpg")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        // Create a website
+        sqlx::query("INSERT INTO website (domain) VALUES (?)")
+            .bind("example.com")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        // Create a source
+        sqlx::query("INSERT INTO source (manga_id, website_id, path) VALUES (?, ?, ?)")
+            .bind(1)
+            .bind(1)
+            .bind("/manga/test")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        // Delete the website
+        let response = app.clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/website/example.com")
+                    .method("DELETE")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Verify website is gone
+        let check_website = sqlx::query("SELECT id FROM website WHERE domain = 'example.com'")
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+        assert!(check_website.is_none());
+
+        // Verify source is gone (cascade)
+        let check_source = sqlx::query("SELECT * FROM source WHERE website_id = 1")
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+        assert!(check_source.is_none());
     }
 }
