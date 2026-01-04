@@ -348,6 +348,28 @@ pub async fn update_manga(
             .map_err(|e| ApiError::Internal(e.to_string()))?;
     }
 
+    if let Some(chapter_number) = payload.chapter_number {
+        let last_chapter = sqlx::query("SELECT number FROM chapter WHERE manga_id = ? ORDER BY updated_at DESC LIMIT 1")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+        let should_insert = match last_chapter {
+            Some(row) => row.get::<String, _>("number") != chapter_number,
+            None => true,
+        };
+
+        if should_insert {
+            sqlx::query("INSERT INTO chapter (manga_id, number) VALUES (?, ?)")
+                .bind(id)
+                .bind(chapter_number)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| ApiError::Internal(e.to_string()))?;
+        }
+    }
+
     tx.commit().await.map_err(|e| ApiError::Internal(e.to_string()))?;
 
     Ok(Json(ApiResponse::success_null()))
