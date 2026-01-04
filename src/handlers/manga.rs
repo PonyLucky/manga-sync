@@ -245,6 +245,8 @@ pub async fn create_manga(
         .last_insert_rowid();
 
     if let (Some(path), Some(domain)) = (payload.source_path, payload.website_domain) {
+        let path = path.trim_end_matches('/');
+
         let website = sqlx::query("SELECT id FROM website WHERE domain = ?")
             .bind(&domain)
             .fetch_optional(&mut *tx)
@@ -328,6 +330,8 @@ pub async fn update_manga(
     }
 
     if let (Some(path), Some(domain)) = (payload.source_path, payload.website_domain) {
+        let path = path.trim_end_matches('/');
+
         let website = sqlx::query("SELECT id FROM website WHERE domain = ?")
             .bind(&domain)
             .fetch_optional(&mut *tx)
