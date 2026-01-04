@@ -236,7 +236,7 @@ pub async fn create_manga(
     let mut tx = pool.begin().await.map_err(|e| ApiError::Internal(e.to_string()))?;
 
     let manga_id = sqlx::query("INSERT INTO manga (name, cover, cover_small) VALUES (?, ?, ?)")
-        .bind(&payload.name)
+        .bind(payload.name.trim())
         .bind(&payload.cover)
         .bind(&payload.cover_small)
         .execute(&mut *tx)
