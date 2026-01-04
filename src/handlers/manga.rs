@@ -137,11 +137,19 @@ pub async fn get_manga(
     }
 }
 
+#[derive(Serialize, sqlx::FromRow, ToSchema)]
+pub struct MangaSource {
+    pub id: i64,
+    pub manga_id: i64,
+    pub website_id: i64,
+    pub path: String,
+}
+
 #[utoipa::path(
     get,
     path = "/manga/{id}/source",
     responses(
-        (status = 200, description = "Get manga sources", body = ApiResponse<Vec<String>>)
+        (status = 200, description = "Get manga sources", body = ApiResponse<Vec<MangaSource>>)
     ),
     params(
         ("id" = i64, Path, description = "Manga ID")
@@ -153,15 +161,14 @@ pub async fn get_manga(
 pub async fn get_manga_sources(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Vec<String>>>, ApiError> {
-    let sources = sqlx::query("SELECT path FROM source WHERE manga_id = ?")
+) -> Result<Json<ApiResponse<Vec<MangaSource>>>, ApiError> {
+    let sources = sqlx::query_as::<sqlx::Sqlite, MangaSource>("SELECT id, manga_id, website_id, path FROM source WHERE manga_id = ?")
         .bind(id)
         .fetch_all(&pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
-    let paths = sources.into_iter().map(|s| s.get::<String, _>("path")).collect();
-    Ok(Json(ApiResponse::success(paths)))
+    Ok(Json(ApiResponse::success(sources)))
 }
 
 #[derive(Serialize, sqlx::FromRow, ToSchema)]
