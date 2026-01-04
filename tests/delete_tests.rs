@@ -135,17 +135,18 @@ mod tests {
         let (app, pool) = setup_app_no_auth().await;
 
         // Create a website
-        sqlx::query("INSERT INTO website (domain) VALUES (?)")
+        let result = sqlx::query("INSERT INTO website (domain) VALUES (?)")
             .bind("example.com")
             .execute(&pool)
             .await
             .unwrap();
+        let website_id = result.last_insert_rowid();
 
         // Delete it
         let response = app.clone()
             .oneshot(
                 Request::builder()
-                    .uri("/website/example.com")
+                    .uri(&format!("/website/{}", website_id))
                     .method("DELETE")
                     .body(Body::empty())
                     .unwrap(),
@@ -156,7 +157,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // Verify it's gone
-        let check = sqlx::query("SELECT id FROM website WHERE domain = 'example.com'")
+        let check = sqlx::query("SELECT id FROM website WHERE id = ?")
+            .bind(website_id)
             .fetch_optional(&pool)
             .await
             .unwrap();
@@ -170,7 +172,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/website/nonexistent.com")
+                    .uri("/website/999")
                     .method("DELETE")
                     .body(Body::empty())
                     .unwrap(),
@@ -195,16 +197,17 @@ mod tests {
             .unwrap();
 
         // Create a website
-        sqlx::query("INSERT INTO website (domain) VALUES (?)")
+        let result = sqlx::query("INSERT INTO website (domain) VALUES (?)")
             .bind("example.com")
             .execute(&pool)
             .await
             .unwrap();
+        let website_id = result.last_insert_rowid();
 
         // Create a source
         sqlx::query("INSERT INTO source (manga_id, website_id, path) VALUES (?, ?, ?)")
             .bind(1)
-            .bind(1)
+            .bind(website_id)
             .bind("/manga/test")
             .execute(&pool)
             .await
@@ -214,7 +217,7 @@ mod tests {
         let response = app.clone()
             .oneshot(
                 Request::builder()
-                    .uri("/website/example.com")
+                    .uri(&format!("/website/{}", website_id))
                     .method("DELETE")
                     .body(Body::empty())
                     .unwrap(),
@@ -225,14 +228,16 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // Verify website is gone
-        let check_website = sqlx::query("SELECT id FROM website WHERE domain = 'example.com'")
+        let check_website = sqlx::query("SELECT id FROM website WHERE id = ?")
+            .bind(website_id)
             .fetch_optional(&pool)
             .await
             .unwrap();
         assert!(check_website.is_none());
 
         // Verify source is gone (cascade)
-        let check_source = sqlx::query("SELECT * FROM source WHERE website_id = 1")
+        let check_source = sqlx::query("SELECT * FROM source WHERE website_id = ?")
+            .bind(website_id)
             .fetch_optional(&pool)
             .await
             .unwrap();
