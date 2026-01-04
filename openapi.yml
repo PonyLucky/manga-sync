@@ -258,6 +258,20 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
       security:
       - bearer_auth: []
+  /source:
+    get:
+      tags:
+      - handlers::source
+      operationId: list_sources
+      responses:
+        '200':
+          description: List all sources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      security:
+      - bearer_auth: []
   /website:
     get:
       tags:
@@ -311,6 +325,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+      security:
+      - bearer_auth: []
+    delete:
+      tags:
+      - handlers::website
+      operationId: delete_website
+      parameters:
+      - name: domain
+        in: path
+        description: Website domain
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Website deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Website not found
       security:
       - bearer_auth: []
 components:
@@ -438,6 +474,25 @@ components:
           format: int64
         name:
           type: string
+    MangaSource:
+      type: object
+      required:
+      - id
+      - manga_id
+      - website_id
+      - path
+      properties:
+        id:
+          type: integer
+          format: int64
+        manga_id:
+          type: integer
+          format: int64
+        path:
+          type: string
+        website_id:
+          type: integer
+          format: int64
     Pagination:
       type: object
       properties:
