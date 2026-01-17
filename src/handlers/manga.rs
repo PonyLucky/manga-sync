@@ -23,6 +23,7 @@ pub struct MangaListItem {
     pub name: String,
     pub cover: String,
     pub current_chapter: Option<String>,
+    pub number_unread_chapter: Option<i64>,
 }
 
 #[utoipa::path(
@@ -45,8 +46,9 @@ pub async fn list_manga(
     let offset = (page - 1) * size;
 
     let mut query_builder = String::from(
-        "SELECT m.id, m.name, m.cover_small as cover, 
-        (SELECT c.number FROM chapter c WHERE c.manga_id = m.id ORDER BY c.updated_at DESC LIMIT 1) as current_chapter
+        "SELECT m.id, m.name, m.cover_small as cover,
+        (SELECT c.number FROM chapter c WHERE c.manga_id = m.id ORDER BY c.updated_at DESC LIMIT 1) as current_chapter,
+        (SELECT MAX(s.number_unread_chapter) FROM source s WHERE s.manga_id = m.id) as number_unread_chapter
         FROM manga m"
     );
 
@@ -100,6 +102,7 @@ pub struct MangaDetail {
     pub cover: String,
     pub current_chapter: Option<String>,
     pub last_read_at: Option<chrono::NaiveDateTime>,
+    pub number_unread_chapter: Option<i64>,
 }
 
 #[utoipa::path(
@@ -121,9 +124,10 @@ pub async fn get_manga(
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<MangaDetail>>, ApiError> {
     let manga = sqlx::query_as::<sqlx::Sqlite, MangaDetail>(
-        "SELECT m.id, m.name, m.cover, 
+        "SELECT m.id, m.name, m.cover,
         (SELECT c.number FROM chapter c WHERE c.manga_id = m.id ORDER BY c.updated_at DESC LIMIT 1) as current_chapter,
-        (SELECT MAX(c.updated_at) FROM chapter c WHERE c.manga_id = m.id) as last_read_at
+        (SELECT MAX(c.updated_at) FROM chapter c WHERE c.manga_id = m.id) as last_read_at,
+        (SELECT MAX(s.number_unread_chapter) FROM source s WHERE s.manga_id = m.id) as number_unread_chapter
         FROM manga m WHERE m.id = ?"
     )
     .bind(id)
@@ -143,6 +147,7 @@ pub struct MangaSource {
     pub manga_id: i64,
     pub website_id: i64,
     pub path: String,
+    pub number_unread_chapter: Option<i64>,
 }
 
 #[utoipa::path(
@@ -162,7 +167,9 @@ pub async fn get_manga_sources(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<Vec<MangaSource>>>, ApiError> {
-    let sources = sqlx::query_as::<sqlx::Sqlite, MangaSource>("SELECT id, manga_id, website_id, path FROM source WHERE manga_id = ?")
+    let sources = sqlx::query_as::<sqlx::Sqlite, MangaSource>(
+        "SELECT id, manga_id, website_id, path, number_unread_chapter FROM source WHERE manga_id = ?"
+    )
         .bind(id)
         .fetch_all(&pool)
         .await

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use manga_sync::auth::key_manager::KeyManager;
 use manga_sync::auth::middleware::auth_middleware;
-use manga_sync::{db, handlers};
+use manga_sync::{db, handlers, sync};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -22,6 +22,8 @@ async fn main() -> anyhow::Result<()> {
 
     let key_manager = Arc::new(KeyManager::new(&format!("{}/key.pub", secret_dir))?);
     let pool = db::init_db(&format!("sqlite:{}/manga.db", secret_dir)).await?;
+
+    let _scheduler = sync::scheduler::start_scheduler(pool.clone()).await?;
 
     let app = Router::new()
         .route("/manga", get(handlers::manga::list_manga).post(handlers::manga::create_manga))

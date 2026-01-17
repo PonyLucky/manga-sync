@@ -22,6 +22,8 @@ pub struct Source {
     pub manga_id: i64,
     pub website_id: i64,
     pub path: String,
+    pub external_manga_id: Option<String>,
+    pub number_unread_chapter: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, sqlx::FromRow, ToSchema)]
