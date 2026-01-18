@@ -28,7 +28,7 @@ mod tests {
         
         let app = Router::new()
             .route("/manga", get(handlers::manga::list_manga).post(handlers::manga::create_manga))
-            .route("/website/:domain", post(handlers::website::create_website))
+            .route("/website/{domain}", post(handlers::website::create_website))
             .layer(middleware::from_fn_with_state(km.clone(), auth_middleware))
             .with_state(pool);
 

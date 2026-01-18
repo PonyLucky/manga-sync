@@ -17,10 +17,10 @@ mod tests {
 
         let app = Router::new()
             .route("/manga", get(handlers::manga::list_manga).post(handlers::manga::create_manga))
-            .route("/manga/:id", get(handlers::manga::get_manga).patch(handlers::manga::update_manga).delete(handlers::manga::delete_manga))
-            .route("/manga/:id/source", get(handlers::manga::get_manga_sources))
-            .route("/manga/:id/source/:domain", axum::routing::delete(handlers::manga::delete_manga_source))
-            .route("/website/:domain", get(handlers::website::check_website).post(handlers::website::create_website).delete(handlers::website::delete_website))
+            .route("/manga/{id}", get(handlers::manga::get_manga).patch(handlers::manga::update_manga).delete(handlers::manga::delete_manga))
+            .route("/manga/{id}/source", get(handlers::manga::get_manga_sources))
+            .route("/manga/{id}/source/{domain}", axum::routing::delete(handlers::manga::delete_manga_source))
+            .route("/website/{domain}", get(handlers::website::check_website).post(handlers::website::create_website).delete(handlers::website::delete_website))
             .with_state(pool.clone());
 
         (app, pool)
@@ -146,7 +146,7 @@ mod tests {
         let response = app.clone()
             .oneshot(
                 Request::builder()
-                    .uri(&format!("/website/{}", website_id))
+                    .uri("/website/example.com")
                     .method("DELETE")
                     .body(Body::empty())
                     .unwrap(),
@@ -172,7 +172,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/website/999")
+                    .uri("/website/nonexistent.com")
                     .method("DELETE")
                     .body(Body::empty())
                     .unwrap(),
@@ -217,7 +217,7 @@ mod tests {
         let response = app.clone()
             .oneshot(
                 Request::builder()
-                    .uri(&format!("/website/{}", website_id))
+                    .uri("/website/example.com")
                     .method("DELETE")
                     .body(Body::empty())
                     .unwrap(),
