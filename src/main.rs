@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/manga", get(handlers::manga::list_manga).post(handlers::manga::create_manga))
         .route("/manga/{id}", get(handlers::manga::get_manga).patch(handlers::manga::update_manga).delete(handlers::manga::delete_manga))
-        .route("/manga/{id}/source", get(handlers::manga::get_manga_sources))
+        .route("/manga/{id}/source", get(handlers::manga::get_manga_sources).post(handlers::manga::create_manga_source))
         .route("/manga/{id}/source/{domain}", delete(handlers::manga::delete_manga_source))
         .route("/manga/{id}/history", get(handlers::manga::get_manga_history))
         .route("/manga/refresh-unread", post(handlers::manga::refresh_all_unread))

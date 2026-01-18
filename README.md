@@ -89,6 +89,7 @@ All responses follow this standard format:
 - `PATCH /manga/:id`: Update manga details or progress.
 - `DELETE /manga/:id`: Delete a manga (and its sources/history).
 - `GET /manga/:id/source`: Get all sources for a manga.
+- `POST /manga/:id/source`: Add a new source to a manga.
 - `DELETE /manga/:id/source/:domain`: Delete a specific source for a manga.
 - `GET /manga/:id/history`: Get reading history for a manga.
 - `POST /manga/refresh-unread`: Refresh all unread manga.

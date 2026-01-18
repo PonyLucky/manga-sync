@@ -181,6 +181,75 @@ pub async fn get_manga_sources(
     Ok(Json(ApiResponse::success(sources)))
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct CreateMangaSource {
+    pub website_id: i64,
+    pub path: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/manga/{id}/source",
+    request_body = CreateMangaSource,
+    responses(
+        (status = 200, description = "Source created successfully", body = Object),
+        (status = 404, description = "Manga or website not found"),
+        (status = 400, description = "Source already exists")
+    ),
+    params(
+        ("id" = i64, Path, description = "Manga ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn create_manga_source(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Json(payload): Json<CreateMangaSource>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    // Verify manga exists
+    let manga = sqlx::query("SELECT id FROM manga WHERE id = ?")
+        .bind(id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    if manga.is_none() {
+        return Err(ApiError::NotFound("Manga not found".into()));
+    }
+
+    // Verify website exists
+    let website = sqlx::query("SELECT id FROM website WHERE id = ?")
+        .bind(payload.website_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    if website.is_none() {
+        return Err(ApiError::NotFound("Website not found".into()));
+    }
+
+    let path = payload.path.trim_end_matches('/');
+
+    // Insert source
+    sqlx::query("INSERT INTO source (manga_id, website_id, path) VALUES (?, ?, ?)")
+        .bind(id)
+        .bind(payload.website_id)
+        .bind(path)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("UNIQUE constraint failed") {
+                ApiError::BadRequest("Source already exists for this website and path".into())
+            } else {
+                ApiError::Internal(e.to_string())
+            }
+        })?;
+
+    Ok(Json(ApiResponse::success_null()))
+}
+
 #[derive(Serialize, sqlx::FromRow, ToSchema)]
 pub struct HistoryItem {
     pub number: String,
