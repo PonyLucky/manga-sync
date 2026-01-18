@@ -5,6 +5,7 @@ use axum::{
 };
 use tower_http::trace::TraceLayer;
 use std::sync::Arc;
+use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use manga_sync::auth::key_manager::KeyManager;
 use manga_sync::auth::middleware::auth_middleware;
@@ -28,10 +29,10 @@ async fn main() -> anyhow::Result<()> {
     let pool = db::init_db(&format!("sqlite:{}/manga.db", secret_dir)).await?;
     let cache = Arc::new(ChapterCache::new());
 
-    let _scheduler = sync::scheduler::start_scheduler(pool.clone(), cache.clone()).await?;
+    let mut scheduler = sync::scheduler::start_scheduler(pool.clone(), cache.clone()).await?;
 
     let state = AppState {
-        pool,
+        pool: pool.clone(),
         cache,
     };
 
@@ -57,7 +58,45 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:7783").await?;
     tracing::info!("Listening on {}", listener.local_addr()?);
-    axum::serve(listener, app).await?;
 
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+
+    tracing::info!("Shutting down scheduler...");
+    scheduler.shutdown().await?;
+
+    tracing::info!("Closing database connections...");
+    pool.close().await;
+
+    tracing::info!("Shutdown complete");
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {
+            tracing::info!("Received SIGINT, initiating graceful shutdown...");
+        }
+        _ = terminate => {
+            tracing::info!("Received SIGTERM, initiating graceful shutdown...");
+        }
+    }
 }
