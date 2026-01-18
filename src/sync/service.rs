@@ -58,6 +58,63 @@ impl SyncService {
         results
     }
 
+    /// ```rust
+    /// Retrieves a list of sources to synchronize based on supported domains.
+    ///
+    /// # Summary
+    /// This asynchronous function queries the database to find sources that belong to a
+    /// whitelist of domains supported by the registry. Each source is associated with a
+    /// manga and includes details such as its domain, path, and the latest chapter number.
+    ///
+    /// # Details
+    /// - It checks the list of domains supported by the registry. If no domains are supported,
+    ///   an empty vector is returned.
+    /// - Constructs a query to select sources (`source` table) that belong to the whitelisted
+    ///   domains. This query joins the `manga` and `website` tables to also retrieve information
+    ///   about the manga and its website.
+    /// - The query is parameterized to include all the domains in the whitelist.
+    /// - Executes the query and transforms the resulting rows into instances of `SyncSourceInfo`.
+    ///
+    /// # Returns
+    /// - On success, returns a `Vec<SyncSourceInfo>`, where each element contains:
+    ///     - `source_id`: Source ID from the `source` table.
+    ///     - `manga_id`: The manga ID the source belongs to.
+    ///     - `manga_name`: Name of the manga.
+    ///     - `domain`: The domain of the source's website.
+    ///     - `path`: The path of the source.
+    ///     - `external_manga_id`: An optional external identifier for the manga.
+    ///     - `current_chapter`: The latest chapter number of the manga, which is optional.
+    /// - On failure, returns a `sqlx::Error` indicating the issue.
+    ///
+    /// # Arguments
+    /// - `&self`: A reference to the current instance of the struct implementing this method.
+    ///   It provides access to:
+    ///     - `self.registry`: A registry object that defines supported domains.
+    ///     - `self.pool`: The database connection pool used to execute queries.
+    ///
+    /// # SQL Query
+    /// The dynamically constructed SQL query retrieves data from the `source`, `manga`,
+    /// and `website` tables. It filters the results to the domains included in the registry's
+    /// whitelist and determines the latest chapter for each source using a correlated subquery.
+    ///
+    /// # Example
+    /// ```rust
+    /// let sources = instance.get_sources_to_sync().await?;
+    /// for source in sources {
+    ///     println!("Source ID: {}, Domain: {}", source.source_id, source.domain);
+    /// }
+    /// ```
+    ///
+    /// # Errors
+    /// This function will return a `sqlx::Error` if:
+    /// - The connection to the database fails.
+    /// - The query construction or execution encounters an error.
+    ///
+    /// # Dependencies
+    /// - `sqlx`: A runtime library for asynchronous database interaction.
+    /// - The `SyncSourceInfo` struct must be defined elsewhere in the codebase
+    ///   as the representation of the database rows.
+    /// ```
     async fn get_sources_to_sync(&self) -> Result<Vec<SyncSourceInfo>, sqlx::Error> {
         let domains = self.registry.supported_domains();
 
@@ -65,9 +122,11 @@ impl SyncService {
             return Ok(vec![]);
         }
 
+        // Placeholders for the query parameters (if 3 domains, ??? -> ?, ?, ?)
         let placeholders: Vec<String> = domains.iter().map(|_| "?".to_string()).collect();
         let placeholder_str = placeholders.join(", ");
 
+        // Query to get sources from a whitelist of domains
         let query = format!(
             r#"
             SELECT
@@ -92,8 +151,10 @@ impl SyncService {
             placeholder_str
         );
 
+        // Types of the query's response
         let mut query_builder = sqlx::query_as::<_, (i64, i64, String, String, String, Option<String>, Option<String>)>(&query);
 
+        // Bind each domain parameter to the query (securely replace the placeholders)
         for domain in &domains {
             query_builder = query_builder.bind(*domain);
         }
