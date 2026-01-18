@@ -3,6 +3,7 @@ use axum::{
     Router,
     middleware,
 };
+use tower_http::trace::TraceLayer;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use manga_sync::auth::key_manager::KeyManager;
@@ -46,6 +47,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/source", get(handlers::source::list_sources))
         .route("/setting", get(handlers::setting::list_settings))
         .route("/setting/{key}", post(handlers::setting::update_setting))
+        .layer(TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(key_manager.clone(), auth_middleware))
         .with_state(state);
 
