@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.83-slim AS builder
+FROM rust:1.92.0-slim-bookworm AS builder
 
 WORKDIR /usr/src/app
 
@@ -8,13 +8,14 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev libsqlite3-dev
 
 # Copy only the files needed for building
 COPY Cargo.toml Cargo.lock ./
+COPY migrations ./migrations
 COPY src ./src
 
 # Build the application
 RUN cargo build --release
 
 # Final stage
-FROM debian:bookworm-slim
+FROM rust:1.92.0-slim
 
 WORKDIR /usr/local/bin
 
