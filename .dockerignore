@@ -1,0 +1,6 @@
+target/
+.git/
+.idea/
+.claude/
+secret/
+test_key_integration.pub

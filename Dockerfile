@@ -2,10 +2,13 @@
 FROM rust:1.83-slim AS builder
 
 WORKDIR /usr/src/app
-COPY . .
 
 # Install dependencies for sqlx and others
 RUN apt-get update && apt-get install -y pkg-config libssl-dev libsqlite3-dev
+
+# Copy only the files needed for building
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
 
 # Build the application
 RUN cargo build --release
