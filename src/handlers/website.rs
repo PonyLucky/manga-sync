@@ -2,8 +2,8 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use sqlx::SqlitePool;
 use serde::Serialize;
+use crate::state::AppState;
 use crate::utils::response::{ApiResponse, ApiError};
 use crate::models::Website;
 
@@ -20,10 +20,10 @@ use utoipa::ToSchema;
     )
 )]
 pub async fn list_websites(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<Website>>>, ApiError> {
     let websites = sqlx::query_as::<sqlx::Sqlite, Website>("SELECT id, domain FROM website")
-        .fetch_all(&pool)
+        .fetch_all(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
@@ -49,12 +49,12 @@ pub struct Existence {
     )
 )]
 pub async fn check_website(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(domain): Path<String>,
 ) -> Result<Json<ApiResponse<Existence>>, ApiError> {
     let website = sqlx::query("SELECT id FROM website WHERE domain = ?")
         .bind(&domain)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
@@ -77,12 +77,12 @@ pub async fn check_website(
     )
 )]
 pub async fn create_website(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(domain): Path<String>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
     let existing = sqlx::query("SELECT id FROM website WHERE domain = ?")
         .bind(&domain)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
@@ -92,7 +92,7 @@ pub async fn create_website(
 
     sqlx::query("INSERT INTO website (domain) VALUES (?)")
         .bind(&domain)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
@@ -114,12 +114,12 @@ pub async fn create_website(
     )
 )]
 pub async fn delete_website(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(domain): Path<String>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
     let result = sqlx::query("DELETE FROM website WHERE domain = ?")
         .bind(domain)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 

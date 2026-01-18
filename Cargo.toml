@@ -30,3 +30,4 @@ scraper = "0.25.0"
 tokio-cron-scheduler = "0.15.1"
 async-trait = "0.1"
 regex = "1"
+moka = { version = "0.12", features = ["future"] }

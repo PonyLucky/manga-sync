@@ -8,15 +8,23 @@ mod tests {
     };
     use tower::ServiceExt;
     use sqlx::SqlitePool;
+    use std::sync::Arc;
     use manga_sync::handlers;
-    
+    use manga_sync::cache::ChapterCache;
+    use manga_sync::state::AppState;
+
     async fn setup_app_no_auth() -> (Router, SqlitePool) {
         let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
+        let state = AppState {
+            pool: pool.clone(),
+            cache: Arc::new(ChapterCache::new()),
+        };
+
         let app = Router::new()
             .route("/source", get(handlers::source::list_sources))
-            .with_state(pool.clone());
+            .with_state(state);
 
         (app, pool)
     }

@@ -2,8 +2,9 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use sqlx::{SqlitePool, Row};
+use sqlx::Row;
 use std::collections::HashMap;
+use crate::state::AppState;
 use crate::utils::response::{ApiResponse, ApiError};
 
 #[utoipa::path(
@@ -17,10 +18,10 @@ use crate::utils::response::{ApiResponse, ApiError};
     )
 )]
 pub async fn list_settings(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<HashMap<String, String>>>, ApiError> {
     let settings = sqlx::query("SELECT key, value FROM setting")
-        .fetch_all(&pool)
+        .fetch_all(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
@@ -43,7 +44,7 @@ pub async fn list_settings(
     )
 )]
 pub async fn update_setting(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(key): Path<String>,
     body: String,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
@@ -52,7 +53,7 @@ pub async fn update_setting(
     )
     .bind(&key)
     .bind(&body)
-    .execute(&pool)
+    .execute(&state.pool)
     .await
     .map_err(|e| ApiError::Internal(e.to_string()))?;
 

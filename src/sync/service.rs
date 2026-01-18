@@ -1,6 +1,8 @@
 use reqwest::Client;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 
+use crate::cache::ChapterCache;
 use crate::sync::http_client::create_client;
 use crate::sync::strategies::StrategyRegistry;
 
@@ -8,6 +10,7 @@ pub struct SyncService {
     pool: SqlitePool,
     client: Client,
     registry: StrategyRegistry,
+    cache: Arc<ChapterCache>,
 }
 
 #[derive(Debug)]
@@ -31,12 +34,25 @@ pub struct SyncResult {
 }
 
 impl SyncService {
-    pub fn new(pool: SqlitePool) -> Self {
+    pub fn new(pool: SqlitePool, cache: Arc<ChapterCache>) -> Self {
         Self {
             pool,
             client: create_client(),
             registry: StrategyRegistry::new(),
+            cache,
         }
+    }
+
+    pub fn registry(&self) -> &StrategyRegistry {
+        &self.registry
+    }
+
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
+    pub fn cache(&self) -> &Arc<ChapterCache> {
+        &self.cache
     }
 
     pub async fn sync_all(&self) -> Vec<SyncResult> {
@@ -180,7 +196,11 @@ impl SyncService {
         let external_id_ref = source.external_manga_id.as_deref().or(external_id);
 
         let chapters = match strategy.fetch_chapters(&self.client, &source.path, external_id_ref).await {
-            Ok(c) => c,
+            Ok(c) => {
+                // Cache the chapters after fetching
+                self.cache.set(&source.domain, &source.path, c.clone()).await;
+                c
+            }
             Err(e) => {
                 return SyncResult {
                     source_id: source.source_id,

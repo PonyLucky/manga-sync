@@ -8,12 +8,20 @@ mod tests {
     };
     use tower::ServiceExt;
     use sqlx::SqlitePool;
+    use std::sync::Arc;
     use manga_sync::handlers;
-    
+    use manga_sync::cache::ChapterCache;
+    use manga_sync::state::AppState;
+
     // Test without auth middleware to verify logic
     async fn setup_app_no_auth() -> (Router, SqlitePool) {
         let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+
+        let state = AppState {
+            pool: pool.clone(),
+            cache: Arc::new(ChapterCache::new()),
+        };
 
         let app = Router::new()
             .route("/manga", get(handlers::manga::list_manga).post(handlers::manga::create_manga))
@@ -21,7 +29,7 @@ mod tests {
             .route("/manga/{id}/source", get(handlers::manga::get_manga_sources))
             .route("/manga/{id}/source/{domain}", axum::routing::delete(handlers::manga::delete_manga_source))
             .route("/website/{domain}", get(handlers::website::check_website).post(handlers::website::create_website).delete(handlers::website::delete_website))
-            .with_state(pool.clone());
+            .with_state(state);
 
         (app, pool)
     }

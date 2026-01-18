@@ -2,19 +2,21 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
+use crate::cache::ChapterCache;
 use crate::sync::service::SyncService;
 
-pub async fn start_scheduler(pool: SqlitePool) -> anyhow::Result<JobScheduler> {
+pub async fn start_scheduler(pool: SqlitePool, cache: Arc<ChapterCache>) -> anyhow::Result<JobScheduler> {
     let scheduler = JobScheduler::new().await?;
 
     let pool = Arc::new(pool);
 
     let job = Job::new_async("0 0 0 * * *", move |_uuid, _lock| {
         let pool = Arc::clone(&pool);
+        let cache = Arc::clone(&cache);
         Box::pin(async move {
             tracing::info!("Starting daily manga sync job");
 
-            let service = SyncService::new((*pool).clone());
+            let service = SyncService::new((*pool).clone(), cache);
             let results = service.sync_all().await;
 
             let success_count = results.iter().filter(|r| r.error.is_none()).count();
