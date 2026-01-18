@@ -9,3 +9,4 @@ target/
 # Project
 secret/
 .env
+test_key_integration.pub
