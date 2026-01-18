@@ -113,7 +113,7 @@ fn test_mangabuddy_count_new_chapters_not_found() {
 #[test]
 fn test_strategy_domains() {
     let mangaread = WebsiteMangareadOrg::new();
-    assert_eq!(mangaread.domain(), "mangaread.org");
+    assert_eq!(mangaread.domain(), "www.mangaread.org");
 
     let mangabuddy = WebsiteMangabuddyCom::new();
     assert_eq!(mangabuddy.domain(), "mangabuddy.com");

@@ -21,7 +21,7 @@ impl Default for WebsiteMangareadOrg {
 #[async_trait]
 impl SyncStrategy for WebsiteMangareadOrg {
     fn domain(&self) -> &'static str {
-        "mangaread.org"
+        "www.mangaread.org"
     }
 
     async fn fetch_chapters(
