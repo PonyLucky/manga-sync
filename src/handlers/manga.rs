@@ -691,20 +691,6 @@ pub async fn refresh_all_unread(
         let external_manga_id: Option<String> = row.get("external_manga_id");
         let current_chapter: Option<String> = row.get("current_chapter");
 
-        let current_chapter = match current_chapter {
-            Some(c) => c,
-            None => {
-                results.push(RefreshResult {
-                    manga_id,
-                    manga_name,
-                    domain,
-                    unread_count: None,
-                    error: Some("No current chapter found".to_string()),
-                });
-                continue;
-            }
-        };
-
         let strategy = match registry.get(&domain) {
             Some(s) => s,
             None => {
@@ -745,39 +731,43 @@ pub async fn refresh_all_unread(
         let chapters = chapters.unwrap();
 
         // Count new chapters
-        let count = match strategy.count_new_chapters(&chapters, &current_chapter) {
-            Ok(c) => c,
-            Err(_) => {
-                // Chapter not found, try fetching fresh
-                match strategy.fetch_chapters(&client, &path, external_manga_id.as_deref()).await {
-                    Ok(fresh) => {
-                        state.cache.set(&domain, &path, fresh.clone()).await;
-                        match strategy.count_new_chapters(&fresh, &current_chapter) {
-                            Ok(c) => c,
-                            Err(e) => {
-                                results.push(RefreshResult {
-                                    manga_id,
-                                    manga_name,
-                                    domain,
-                                    unread_count: None,
-                                    error: Some(format!("Chapter not found: {}", e)),
-                                });
-                                continue;
+        // If no chapter has been read yet, all available chapters are considered unread
+        let count = match &current_chapter {
+            Some(current_chapter) => match strategy.count_new_chapters(&chapters, current_chapter) {
+                Ok(c) => c,
+                Err(_) => {
+                    // Chapter not found, try fetching fresh
+                    match strategy.fetch_chapters(&client, &path, external_manga_id.as_deref()).await {
+                        Ok(fresh) => {
+                            state.cache.set(&domain, &path, fresh.clone()).await;
+                            match strategy.count_new_chapters(&fresh, current_chapter) {
+                                Ok(c) => c,
+                                Err(e) => {
+                                    results.push(RefreshResult {
+                                        manga_id,
+                                        manga_name,
+                                        domain,
+                                        unread_count: None,
+                                        error: Some(format!("Chapter not found: {}", e)),
+                                    });
+                                    continue;
+                                }
                             }
                         }
-                    }
-                    Err(e) => {
-                        results.push(RefreshResult {
-                            manga_id,
-                            manga_name,
-                            domain,
-                            unread_count: None,
-                            error: Some(format!("Failed to fetch fresh chapters: {}", e)),
-                        });
-                        continue;
+                        Err(e) => {
+                            results.push(RefreshResult {
+                                manga_id,
+                                manga_name,
+                                domain,
+                                unread_count: None,
+                                error: Some(format!("Failed to fetch fresh chapters: {}", e)),
+                            });
+                            continue;
+                        }
                     }
                 }
-            }
+            },
+            None => chapters.len(),
         };
 
         // Update the database
