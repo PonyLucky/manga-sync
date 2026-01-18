@@ -22,6 +22,15 @@ docker-build: ## Build the Docker image
 
 docker-run: ## Run the Docker container
 	mkdir -p secret
+	# Stop if active
+	@if docker ps | grep -q manga-sync; then \
+		docker stop manga-sync; \
+	fi
+	# Delete if existing
+	@if docker ps -a | grep -q manga-sync; then \
+		docker rm manga-sync; \
+	fi
+	# Run the container
 	docker run --name manga-sync -p $(DOCKER_PORT):$(LOCAL_PORT) -v $$(pwd)/secret:/usr/local/bin/secret $(IMAGE_NAME)
 
 openapi-update: ## Update openapi.yml automatically from code
