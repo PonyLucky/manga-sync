@@ -90,11 +90,16 @@ All responses follow this standard format:
 - `GET /manga/:id/source`: Get all sources for a manga.
 - `DELETE /manga/:id/source/:domain`: Delete a specific source for a manga.
 - `GET /manga/:id/history`: Get reading history for a manga.
+- `POST /manga/refresh-unread`: Refresh all unread manga.
+
+#### Source
+- `GET /source`: List all sources.
 
 #### Website
 - `GET /website`: List all registered websites.
 - `GET /website/:domain`: Check if a website exists.
 - `POST /website/:domain`: Register a new website.
+- `DELETE /website/:domain`: Delete a website.
 
 #### Settings
 - `GET /setting`: Retrieve all settings.
