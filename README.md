@@ -99,3 +99,7 @@ All responses follow this standard format:
 ### Persistence
 
 The API uses SQLite for storage. The database file `manga.db` and the authentication hash `key.pub` are stored in the `secret/` directory. Database migrations are applied automatically on startup.
+
+## License
+
+This project is licensed under the GNU AGPLv3 - see the [LICENSE](LICENSE) file for details.
