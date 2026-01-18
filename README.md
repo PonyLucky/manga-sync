@@ -17,6 +17,7 @@ A self-hosted REST API written in Rust to manage manga reading progress across d
 - **Web Framework**: Axum
 - **Runtime**: Tokio
 - **Database**: SQLite (via sqlx)
+- **Caching**: Moka
 - **Containerization**: Docker
 
 ### Security & Authentication
