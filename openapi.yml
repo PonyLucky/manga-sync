@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Manga Manager API
   description: A self-hosted REST API to manage manga reading progress.
@@ -21,14 +21,12 @@ paths:
         schema:
           type: integer
           format: int64
-          nullable: true
       - name: page
         in: query
         required: false
         schema:
           type: integer
           format: int64
-          nullable: true
       - name: filter
         in: query
         required: false
@@ -38,14 +36,15 @@ paths:
             type: object
             additionalProperties:
               type: string
-          nullable: true
+            propertyNames:
+              type: string
       responses:
         '200':
           description: List manga successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
       security:
       - bearer_auth: []
     post:
@@ -64,7 +63,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
       security:
       - bearer_auth: []
   /manga/{id}:
@@ -86,7 +85,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
         '404':
           description: Manga not found
       security:
@@ -109,7 +108,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
         '404':
           description: Manga not found
       security:
@@ -138,7 +137,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
         '404':
           description: Manga not found
       security:
@@ -162,7 +161,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_Vec_HistoryItem'
       security:
       - bearer_auth: []
   /manga/{id}/source:
@@ -184,7 +183,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_Vec_MangaSource'
       security:
       - bearer_auth: []
   /manga/{id}/source/{domain}:
@@ -212,7 +211,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
         '404':
           description: Manga or source not found
       security:
@@ -228,7 +227,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
       security:
       - bearer_auth: []
   /setting/{key}:
@@ -245,9 +244,9 @@ paths:
           type: string
       requestBody:
         content:
-          text/plain:
+          application/json:
             schema:
-              type: string
+              type: object
         required: true
       responses:
         '200':
@@ -255,7 +254,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
       security:
       - bearer_auth: []
   /source:
@@ -269,7 +268,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_Vec_Source'
       security:
       - bearer_auth: []
   /website:
@@ -283,7 +282,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_Vec_Website'
       security:
       - bearer_auth: []
   /website/{domain}:
@@ -304,7 +303,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
       security:
       - bearer_auth: []
     post:
@@ -324,7 +323,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
       security:
       - bearer_auth: []
     delete:
@@ -344,23 +343,131 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
         '404':
           description: Website not found
       security:
       - bearer_auth: []
 components:
   schemas:
-    ApiResponse:
+    ApiResponse_Vec_HistoryItem:
       type: object
       required:
       - status
       - message
       properties:
         data:
-          allOf:
-          - $ref: '#/components/schemas/T'
-          nullable: true
+          type: array
+          items:
+            type: object
+            required:
+            - number
+            - updated_at
+            properties:
+              number:
+                type: string
+              updated_at:
+                type: string
+                format: date-time
+        message:
+          type: string
+        status:
+          type: string
+    ApiResponse_Vec_MangaSource:
+      type: object
+      required:
+      - status
+      - message
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - manga_id
+            - website_id
+            - path
+            properties:
+              id:
+                type: integer
+                format: int64
+              manga_id:
+                type: integer
+                format: int64
+              number_unread_chapter:
+                type:
+                - integer
+                - 'null'
+                format: int64
+              path:
+                type: string
+              website_id:
+                type: integer
+                format: int64
+        message:
+          type: string
+        status:
+          type: string
+    ApiResponse_Vec_Source:
+      type: object
+      required:
+      - status
+      - message
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - manga_id
+            - website_id
+            - path
+            properties:
+              external_manga_id:
+                type:
+                - string
+                - 'null'
+              id:
+                type: integer
+                format: int64
+              manga_id:
+                type: integer
+                format: int64
+              number_unread_chapter:
+                type:
+                - integer
+                - 'null'
+                format: int64
+              path:
+                type: string
+              website_id:
+                type: integer
+                format: int64
+        message:
+          type: string
+        status:
+          type: string
+    ApiResponse_Vec_Website:
+      type: object
+      required:
+      - status
+      - message
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - domain
+            properties:
+              domain:
+                type: string
+              id:
+                type: integer
+                format: int64
         message:
           type: string
         status:
@@ -382,7 +489,8 @@ components:
         number:
           type: string
         updated_at:
-          $ref: '#/components/schemas/NaiveDateTime'
+          type: string
+          format: date-time
     CreateManga:
       type: object
       required:
@@ -397,11 +505,13 @@ components:
         name:
           type: string
         source_path:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         website_domain:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     Existence:
       type: object
       required:
@@ -418,7 +528,8 @@ components:
         number:
           type: string
         updated_at:
-          $ref: '#/components/schemas/chrono.NaiveDateTime'
+          type: string
+          format: date-time
     Manga:
       type: object
       required:
@@ -446,17 +557,24 @@ components:
         cover:
           type: string
         current_chapter:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         id:
           type: integer
           format: int64
         last_read_at:
-          allOf:
-          - $ref: '#/components/schemas/chrono.NaiveDateTime'
-          nullable: true
+          type:
+          - string
+          - 'null'
+          format: date-time
         name:
           type: string
+        number_unread_chapter:
+          type:
+          - integer
+          - 'null'
+          format: int64
     MangaListItem:
       type: object
       required:
@@ -467,13 +585,19 @@ components:
         cover:
           type: string
         current_chapter:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         id:
           type: integer
           format: int64
         name:
           type: string
+        number_unread_chapter:
+          type:
+          - integer
+          - 'null'
+          format: int64
     MangaSource:
       type: object
       required:
@@ -488,6 +612,11 @@ components:
         manga_id:
           type: integer
           format: int64
+        number_unread_chapter:
+          type:
+          - integer
+          - 'null'
+          format: int64
         path:
           type: string
         website_id:
@@ -497,20 +626,25 @@ components:
       type: object
       properties:
         filter:
-          type: array
+          type:
+          - array
+          - 'null'
           items:
             type: object
             additionalProperties:
               type: string
-          nullable: true
+            propertyNames:
+              type: string
         page:
-          type: integer
+          type:
+          - integer
+          - 'null'
           format: int64
-          nullable: true
         size:
-          type: integer
+          type:
+          - integer
+          - 'null'
           format: int64
-          nullable: true
     Setting:
       type: object
       required:
@@ -529,11 +663,20 @@ components:
       - website_id
       - path
       properties:
+        external_manga_id:
+          type:
+          - string
+          - 'null'
         id:
           type: integer
           format: int64
         manga_id:
           type: integer
+          format: int64
+        number_unread_chapter:
+          type:
+          - integer
+          - 'null'
           format: int64
         path:
           type: string
@@ -544,23 +687,29 @@ components:
       type: object
       properties:
         chapter_number:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         cover:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         cover_small:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         source_path:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         website_domain:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     Website:
       type: object
       required:
