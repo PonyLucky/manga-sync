@@ -53,7 +53,7 @@ The project includes a `Makefile` to simplify common tasks:
 2. Build and run the container:
    ```bash
    docker build -t manga-sync .
-   docker run -p 7783:7783 -v $(pwd)/secret:/app/secret manga-sync
+   docker run -p 7783:7783 -v $(pwd)/secret:/usr/local/bin/secret manga-sync
    ```
 3. Watch the console output on the first run to get your generated API key.
 

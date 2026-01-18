@@ -22,7 +22,7 @@ docker-build: ## Build the Docker image
 
 docker-run: ## Run the Docker container
 	mkdir -p secret
-	docker run -p $(DOCKER_PORT):$(LOCAL_PORT) -v $$(pwd)/secret:/app/secret $(IMAGE_NAME)
+	docker run -p $(DOCKER_PORT):$(LOCAL_PORT) -v $$(pwd)/secret:/usr/local/bin/secret $(IMAGE_NAME)
 
 openapi-update: ## Update openapi.yml automatically from code
 	cargo run --bin gen_openapi > openapi.yml

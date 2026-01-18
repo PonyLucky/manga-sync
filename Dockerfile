@@ -27,7 +27,9 @@ COPY --from=builder /usr/src/app/migrations ./migrations
 
 EXPOSE 7783
 
-# secret/ directory must be mounted as a volume
+# Create and declare secret/ directory as a volume for persistent data
+# Mount with: -v /host/path/to/secret:/usr/local/bin/secret
+RUN mkdir -p /usr/local/bin/secret
 VOLUME /usr/local/bin/secret
 
 CMD ["./manga-sync"]
