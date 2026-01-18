@@ -4,7 +4,7 @@ use axum::{
     middleware,
 };
 use std::sync::Arc;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use manga_sync::auth::key_manager::KeyManager;
 use manga_sync::auth::middleware::auth_middleware;
 use manga_sync::cache::ChapterCache;
@@ -13,11 +13,12 @@ use manga_sync::{db, handlers, sync};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv().ok();
+
     tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .with(tracing_subscriber::fmt::layer())
         .init();
-
-    dotenvy::dotenv().ok();
 
     let secret_dir = "secret";
     std::fs::create_dir_all(secret_dir)?;
