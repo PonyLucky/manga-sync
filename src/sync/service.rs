@@ -152,19 +152,6 @@ impl SyncService {
             }
         };
 
-        let current_chapter = match &source.current_chapter {
-            Some(c) => c,
-            None => {
-                return SyncResult {
-                    source_id: source.source_id,
-                    manga_name: source.manga_name.clone(),
-                    domain: source.domain.clone(),
-                    new_chapters: 0,
-                    error: Some("No current chapter found".to_string()),
-                }
-            }
-        };
-
         let external_id = match &source.external_manga_id {
             Some(id) => Some(id.as_str()),
             None => {
@@ -212,7 +199,13 @@ impl SyncService {
             }
         };
 
-        match strategy.count_new_chapters(&chapters, current_chapter) {
+        // If no chapter has been read yet, all available chapters are considered unread
+        let count_result = match &source.current_chapter {
+            Some(current_chapter) => strategy.count_new_chapters(&chapters, current_chapter),
+            None => Ok(chapters.len()),
+        };
+
+        match count_result {
             Ok(count) => {
                 if let Err(e) = self.update_unread_count(source.source_id, count).await {
                     tracing::warn!(
