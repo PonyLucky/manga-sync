@@ -47,7 +47,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/source", get(handlers::source::list_sources))
         .route("/setting", get(handlers::setting::list_settings))
         .route("/setting/{key}", post(handlers::setting::update_setting))
-        .layer(TraceLayer::new_for_http())
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
+                .on_response(tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO))
+        )
         .layer(middleware::from_fn_with_state(key_manager.clone(), auth_middleware))
         .with_state(state);
 
