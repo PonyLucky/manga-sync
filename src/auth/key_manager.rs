@@ -1,5 +1,6 @@
 use sha2::{Sha256, Digest};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::distr::Alphanumeric;
+use rand::Rng;
 use std::fs;
 use std::path::Path;
 use std::time::SystemTime;
@@ -32,8 +33,8 @@ impl KeyManager {
         if let Some(parent) = Path::new(&self.key_path).parent() {
             fs::create_dir_all(parent)?;
         }
-        let rng = rand::thread_rng();
-        let length = rand::thread_rng().gen_range(24..=64);
+        let rng = rand::rng();
+        let length = rand::rng().random_range(24..=64);
         let key: String = rng
             .sample_iter(&Alphanumeric)
             .take(length)
@@ -44,10 +45,10 @@ impl KeyManager {
         // Let's add some special characters
         let mut key = key;
         let special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?";
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for _ in 0..5 {
-            let idx = rng.gen_range(0..key.len());
-            let spec_idx = rng.gen_range(0..special_chars.len());
+            let idx = rng.random_range(0..key.len());
+            let spec_idx = rng.random_range(0..special_chars.len());
             key.replace_range(idx..idx+1, &special_chars[spec_idx..spec_idx+1]);
         }
 

@@ -31,7 +31,7 @@ pub struct MangaListItem {
     path = "/manga",
     params(Pagination),
     responses(
-        (status = 200, description = "List manga successfully", body = ApiResponse<Vec<MangaListItem>>)
+        (status = 200, description = "List manga successfully", body = Object)
     ),
     security(
         ("bearer_auth" = [])
@@ -109,7 +109,7 @@ pub struct MangaDetail {
     get,
     path = "/manga/{id}",
     responses(
-        (status = 200, description = "Get manga details", body = ApiResponse<MangaDetail>),
+        (status = 200, description = "Get manga details", body = Object),
         (status = 404, description = "Manga not found")
     ),
     params(
@@ -226,7 +226,7 @@ pub struct CreateManga {
     path = "/manga",
     request_body = CreateManga,
     responses(
-        (status = 200, description = "Manga created successfully", body = ApiResponse<()>)
+        (status = 200, description = "Manga created successfully", body = Object)
     ),
     security(
         ("bearer_auth" = [])
@@ -294,7 +294,7 @@ pub struct UpdateManga {
     path = "/manga/{id}",
     request_body = UpdateManga,
     responses(
-        (status = 200, description = "Manga updated successfully", body = ApiResponse<()>),
+        (status = 200, description = "Manga updated successfully", body = Object),
         (status = 404, description = "Manga not found")
     ),
     params(
@@ -390,7 +390,7 @@ pub async fn update_manga(
     delete,
     path = "/manga/{id}",
     responses(
-        (status = 200, description = "Manga deleted successfully", body = ApiResponse<()>),
+        (status = 200, description = "Manga deleted successfully", body = Object),
         (status = 404, description = "Manga not found")
     ),
     params(
@@ -421,7 +421,7 @@ pub async fn delete_manga(
     delete,
     path = "/manga/{id}/source/{domain}",
     responses(
-        (status = 200, description = "Manga source deleted successfully", body = ApiResponse<()>),
+        (status = 200, description = "Manga source deleted successfully", body = Object),
         (status = 404, description = "Manga or source not found")
     ),
     params(

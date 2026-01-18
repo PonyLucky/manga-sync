@@ -39,7 +39,7 @@ pub struct Existence {
     get,
     path = "/website/{domain}",
     responses(
-        (status = 200, description = "Check if website exists", body = ApiResponse<Existence>)
+        (status = 200, description = "Check if website exists", body = Object)
     ),
     params(
         ("domain" = String, Path, description = "Website domain")
@@ -67,7 +67,7 @@ pub async fn check_website(
     post,
     path = "/website/{domain}",
     responses(
-        (status = 200, description = "Website registered successfully", body = ApiResponse<()>)
+        (status = 200, description = "Website registered successfully", body = Object)
     ),
     params(
         ("domain" = String, Path, description = "Website domain")
@@ -103,7 +103,7 @@ pub async fn create_website(
     delete,
     path = "/website/{domain}",
     responses(
-        (status = 200, description = "Website deleted successfully", body = ApiResponse<()>),
+        (status = 200, description = "Website deleted successfully", body = Object),
         (status = 404, description = "Website not found")
     ),
     params(

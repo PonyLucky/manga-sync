@@ -1,7 +1,6 @@
 use utoipa::{OpenApi, Modify, openapi::security::{SecurityScheme, HttpAuthScheme, HttpBuilder}};
 use crate::handlers;
 use crate::models;
-use crate::utils::response::ApiResponse;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -45,7 +44,6 @@ use crate::utils::response::ApiResponse;
             handlers::manga::CreateManga,
             handlers::manga::UpdateManga,
             handlers::website::Existence,
-            ApiResponse<()>,
         )
     ),
     modifiers(&SecurityAddon)

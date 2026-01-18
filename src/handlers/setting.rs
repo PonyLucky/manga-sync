@@ -10,7 +10,7 @@ use crate::utils::response::{ApiResponse, ApiError};
     get,
     path = "/setting",
     responses(
-        (status = 200, description = "List all settings", body = ApiResponse<HashMap<String, String>>)
+        (status = 200, description = "List all settings", body = Object)
     ),
     security(
         ("bearer_auth" = [])
@@ -31,9 +31,9 @@ pub async fn list_settings(
 #[utoipa::path(
     post,
     path = "/setting/{key}",
-    request_body = String,
+    request_body = Object,
     responses(
-        (status = 200, description = "Setting updated successfully", body = ApiResponse<()>)
+        (status = 200, description = "Setting updated successfully", body = Object)
     ),
     params(
         ("key" = String, Path, description = "Setting key")
