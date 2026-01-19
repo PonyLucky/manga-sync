@@ -152,8 +152,9 @@ impl SyncService {
             }
         };
 
-        let external_id = match &source.external_manga_id {
-            Some(id) => Some(id.as_str()),
+        // Extract external_id if not already stored
+        let extracted_id: Option<String> = match &source.external_manga_id {
+            Some(_) => None,
             None => {
                 match strategy.extract_external_id(&self.client, &source.path).await {
                     Ok(Some(id)) => {
@@ -164,7 +165,7 @@ impl SyncService {
                                 e
                             );
                         }
-                        None
+                        Some(id)
                     }
                     Ok(None) => None,
                     Err(e) => {
@@ -180,7 +181,7 @@ impl SyncService {
             }
         };
 
-        let external_id_ref = source.external_manga_id.as_deref().or(external_id);
+        let external_id_ref = source.external_manga_id.as_deref().or(extracted_id.as_deref());
 
         let chapters = match strategy.fetch_chapters(&self.client, &source.path, external_id_ref).await {
             Ok(c) => {

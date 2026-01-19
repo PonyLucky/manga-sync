@@ -705,6 +705,42 @@ pub async fn refresh_all_unread(
             }
         };
 
+        // Extract external_id if not already stored
+        let external_manga_id = match external_manga_id {
+            Some(id) => Some(id),
+            None => {
+                match strategy.extract_external_id(&client, &path).await {
+                    Ok(Some(id)) => {
+                        // Save to database for future use
+                        if let Err(e) = sqlx::query("UPDATE source SET external_manga_id = ? WHERE id = ?")
+                            .bind(&id)
+                            .bind(source_id)
+                            .execute(&state.pool)
+                            .await
+                        {
+                            tracing::warn!(
+                                "Failed to save external_manga_id for source {}: {}",
+                                source_id,
+                                e
+                            );
+                        }
+                        Some(id)
+                    }
+                    Ok(None) => None,
+                    Err(e) => {
+                        results.push(RefreshResult {
+                            manga_id,
+                            manga_name,
+                            domain,
+                            unread_count: None,
+                            error: Some(format!("Failed to extract external ID: {}", e)),
+                        });
+                        continue;
+                    }
+                }
+            }
+        };
+
         // Try to get chapters from cache
         let mut chapters = state.cache.get(&domain, &path).await;
 
