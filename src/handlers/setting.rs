@@ -20,7 +20,7 @@ use crate::utils::response::{ApiResponse, ApiError};
 pub async fn list_settings(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<HashMap<String, String>>>, ApiError> {
-    let settings = sqlx::query("SELECT key, value FROM setting")
+    let settings = sqlx::query("SELECT key, value FROM setting ORDER BY key")
         .fetch_all(&state.pool)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
