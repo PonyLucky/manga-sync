@@ -30,11 +30,12 @@ pub async fn list_settings(
 }
 
 #[utoipa::path(
-    post,
+    patch,
     path = "/setting/{key}",
     request_body = Object,
     responses(
-        (status = 200, description = "Setting updated successfully", body = Object)
+        (status = 200, description = "Setting updated successfully", body = Object),
+        (status = 404, description = "Setting not found", body = Object)
     ),
     params(
         ("key" = String, Path, description = "Setting key")
@@ -48,14 +49,16 @@ pub async fn update_setting(
     Path(key): Path<String>,
     body: String,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    sqlx::query(
-        "INSERT INTO setting (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-    )
-    .bind(&key)
-    .bind(&body)
-    .execute(&state.pool)
-    .await
-    .map_err(|e| ApiError::Internal(e.to_string()))?;
+    let result = sqlx::query("UPDATE setting SET value = ? WHERE key = ?")
+        .bind(&body)
+        .bind(&key)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound(format!("Setting '{}' not found", key)));
+    }
 
     Ok(Json(ApiResponse::success_null()))
 }

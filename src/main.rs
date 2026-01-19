@@ -1,5 +1,5 @@
 use axum::{
-    routing::{get, post, delete},
+    routing::{get, post, patch, delete},
     Router,
     middleware,
 };
@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/website/{domain}", get(handlers::website::check_website).post(handlers::website::create_website).delete(handlers::website::delete_website))
         .route("/source", get(handlers::source::list_sources))
         .route("/setting", get(handlers::setting::list_settings))
-        .route("/setting/{key}", post(handlers::setting::update_setting))
+        .route("/setting/{key}", patch(handlers::setting::update_setting))
         .route("/key", get(handlers::key::get_key_age).post(handlers::key::refresh_key))
         .layer(
             TraceLayer::new_for_http()
