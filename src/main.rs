@@ -34,6 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         pool: pool.clone(),
         cache,
+        key_manager: key_manager.clone(),
     };
 
     let app = Router::new()
@@ -48,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/source", get(handlers::source::list_sources))
         .route("/setting", get(handlers::setting::list_settings))
         .route("/setting/{key}", post(handlers::setting::update_setting))
+        .route("/key", get(handlers::key::get_key_age).post(handlers::key::refresh_key))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO))

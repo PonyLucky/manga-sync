@@ -12,14 +12,20 @@ mod tests {
     use manga_sync::handlers;
     use manga_sync::cache::ChapterCache;
     use manga_sync::state::AppState;
+    use manga_sync::auth::key_manager::KeyManager;
 
     async fn setup_app_no_auth() -> (Router, SqlitePool) {
         let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
+        let key_path = "test_key_source.pub";
+        let _ = std::fs::remove_file(key_path);
+        let km = Arc::new(KeyManager::new(key_path).unwrap());
+
         let state = AppState {
             pool: pool.clone(),
             cache: Arc::new(ChapterCache::new()),
+            key_manager: km,
         };
 
         let app = Router::new()

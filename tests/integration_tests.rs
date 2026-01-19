@@ -27,6 +27,7 @@ mod tests {
         let state = AppState {
             pool,
             cache: Arc::new(ChapterCache::new()),
+            key_manager: km.clone(),
         };
 
         // Since we can't easily get the plaintext key from KM after it's hashed and KM doesn't expose it
