@@ -10,15 +10,21 @@ use tracing::{info, warn};
 pub struct KeyManager {
     key_path: String,
     hash: std::sync::RwLock<String>,
+    ttl_warning_days: u64,
+    ttl_limit_days: u64,
 }
 
 impl KeyManager {
-    pub fn new(key_path: &str) -> Result<Self> {
+    pub fn new(key_path: &str, ttl_warning_days: u64, ttl_limit_days: u64) -> Result<Self> {
         let path = Path::new(key_path);
         let km = KeyManager {
             key_path: key_path.to_string(),
             hash: std::sync::RwLock::new(String::new()),
+            ttl_warning_days,
+            ttl_limit_days,
         };
+
+        info!("Key TTL settings: warning after {} days, auto-rotate after {} days", ttl_warning_days, ttl_limit_days);
 
         if !path.exists() {
             km.generate_new_key()?;
@@ -83,12 +89,12 @@ impl KeyManager {
 
         info!("API key age: {} days", days);
 
-        if days > 365 {
-            warn!("Key is older than 365 days, auto-rotating...");
+        if days > self.ttl_limit_days {
+            warn!("Key is older than {} days, auto-rotating...", self.ttl_limit_days);
             self.generate_new_key()?;
         } else {
-            if days > 90 {
-                warn!("Key is older than 90 days.");
+            if days > self.ttl_warning_days {
+                warn!("Key is older than {} days.", self.ttl_warning_days);
             }
             *self.hash.write().unwrap() = fs::read_to_string(&self.key_path)?.trim().to_string();
         }
@@ -141,7 +147,7 @@ mod tests {
         cleanup(temp_file);
 
         {
-            let km = KeyManager::new(temp_file).unwrap();
+            let km = KeyManager::new(temp_file, 90, 365).unwrap();
             assert!(Path::new(temp_file).exists());
 
             let metadata = fs::metadata(temp_file).unwrap();
@@ -158,7 +164,7 @@ mod tests {
         cleanup(temp_file);
 
         {
-            let km = KeyManager::new(temp_file).unwrap();
+            let km = KeyManager::new(temp_file, 90, 365).unwrap();
             let age = km.get_age_in_days().unwrap();
             // Newly created key should be 0 days old
             assert_eq!(age, 0);
@@ -173,7 +179,7 @@ mod tests {
         cleanup(temp_file);
 
         {
-            let km = KeyManager::new(temp_file).unwrap();
+            let km = KeyManager::new(temp_file, 90, 365).unwrap();
             let old_hash = km.hash.read().unwrap().clone();
 
             // Refresh the key
@@ -201,7 +207,7 @@ mod tests {
         cleanup(temp_file);
 
         {
-            let km = KeyManager::new(temp_file).unwrap();
+            let km = KeyManager::new(temp_file, 90, 365).unwrap();
 
             // Get a valid token by refreshing (since we don't have access to the original)
             let first_key = km.refresh_key().unwrap();
@@ -225,7 +231,7 @@ mod tests {
         cleanup(temp_file);
 
         {
-            let km = KeyManager::new(temp_file).unwrap();
+            let km = KeyManager::new(temp_file, 90, 365).unwrap();
 
             // Invalid token should fail
             assert!(!km.validate_token("invalid_token"));
@@ -245,7 +251,7 @@ mod tests {
         cleanup(temp_file);
 
         {
-            let km = KeyManager::new(temp_file).unwrap();
+            let km = KeyManager::new(temp_file, 90, 365).unwrap();
             let key = km.refresh_key().unwrap();
 
             // Key should contain at least one special character

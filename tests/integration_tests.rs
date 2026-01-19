@@ -22,7 +22,7 @@ mod tests {
         let _ = std::fs::remove_file(key_path);
 
         // Intercept stdout to get the key is hard, let's just use the hash from KM
-        let km = Arc::new(KeyManager::new(key_path).unwrap());
+        let km = Arc::new(KeyManager::new(key_path, 90, 365).unwrap());
 
         let state = AppState {
             pool,

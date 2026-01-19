@@ -11,7 +11,7 @@ use manga_sync::auth::key_manager::KeyManager;
 use manga_sync::auth::middleware::auth_middleware;
 use manga_sync::cache::ChapterCache;
 use manga_sync::state::AppState;
-use manga_sync::{db, handlers, sync};
+use manga_sync::{db, handlers, sync, settings};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -25,11 +25,22 @@ async fn main() -> anyhow::Result<()> {
     let secret_dir = "secret";
     std::fs::create_dir_all(secret_dir)?;
 
-    let key_manager = Arc::new(KeyManager::new(&format!("{}/key.pub", secret_dir))?);
+    // Initialize the database first so we can read settings
     let pool = db::init_db(&format!("sqlite:{}/manga.db", secret_dir)).await?;
+
+    // Load settings from the database
+    let ttl_warning = settings::get_setting_u64(&pool, "TTL_KEY_WARNING", 90).await?;
+    let ttl_limit = settings::get_setting_u64(&pool, "TTL_KEY_LIMIT", 365).await?;
+    let cron_sync = settings::get_setting_string(&pool, "CRON_SYNC", "0 0 0 * * *").await?;
+
+    let key_manager = Arc::new(KeyManager::new(
+        &format!("{}/key.pub", secret_dir),
+        ttl_warning,
+        ttl_limit,
+    )?);
     let cache = Arc::new(ChapterCache::new());
 
-    let mut scheduler = sync::scheduler::start_scheduler(pool.clone(), cache.clone()).await?;
+    let mut scheduler = sync::scheduler::start_scheduler(pool.clone(), cache.clone(), &cron_sync).await?;
 
     let state = AppState {
         pool: pool.clone(),

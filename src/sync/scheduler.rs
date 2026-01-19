@@ -5,12 +5,12 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use crate::cache::ChapterCache;
 use crate::sync::service::SyncService;
 
-pub async fn start_scheduler(pool: SqlitePool, cache: Arc<ChapterCache>) -> anyhow::Result<JobScheduler> {
+pub async fn start_scheduler(pool: SqlitePool, cache: Arc<ChapterCache>, cron_expression: &str) -> anyhow::Result<JobScheduler> {
     let scheduler = JobScheduler::new().await?;
 
     let pool = Arc::new(pool);
 
-    let job = Job::new_async("0 0 0 * * *", move |_uuid, _lock| {
+    let job = Job::new_async(cron_expression, move |_uuid, _lock| {
         let pool = Arc::clone(&pool);
         let cache = Arc::clone(&cache);
         Box::pin(async move {
@@ -44,7 +44,7 @@ pub async fn start_scheduler(pool: SqlitePool, cache: Arc<ChapterCache>) -> anyh
     scheduler.add(job).await?;
     scheduler.start().await?;
 
-    tracing::info!("Sync scheduler started - running daily at 00:00");
+    tracing::info!("Sync scheduler started with cron expression: {}", cron_expression);
 
     Ok(scheduler)
 }

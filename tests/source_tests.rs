@@ -20,7 +20,7 @@ mod tests {
 
         let key_path = "test_key_source.pub";
         let _ = std::fs::remove_file(key_path);
-        let km = Arc::new(KeyManager::new(key_path).unwrap());
+        let km = Arc::new(KeyManager::new(key_path, 90, 365).unwrap());
 
         let state = AppState {
             pool: pool.clone(),

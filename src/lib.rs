@@ -3,6 +3,7 @@ pub mod cache;
 pub mod db;
 pub mod handlers;
 pub mod models;
+pub mod settings;
 pub mod state;
 pub mod sync;
 pub mod utils;
