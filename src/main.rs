@@ -70,26 +70,35 @@ async fn main() -> anyhow::Result<()> {
         .layer(middleware::from_fn_with_state(key_manager.clone(), auth_middleware))
         .with_state(state);
 
-    let tls_config = RustlsConfig::from_pem_file(
-        format!("{}/ssl/cert.pem", secret_dir),
-        format!("{}/ssl/key.pem", secret_dir),
-    ).await?;
-
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 7783));
-    tracing::info!("Listening on https://{}", addr);
+    let cert_path = format!("{}/ssl/cert.pem", secret_dir);
+    let key_path = format!("{}/ssl/key.pem", secret_dir);
 
-    let handle = axum_server::Handle::new();
-    let shutdown_handle = handle.clone();
+    if std::path::Path::new(&cert_path).exists() && std::path::Path::new(&key_path).exists() {
+        let tls_config = RustlsConfig::from_pem_file(&cert_path, &key_path).await?;
+        tracing::info!("Listening on https://{}", addr);
 
-    tokio::spawn(async move {
-        shutdown_signal().await;
-        shutdown_handle.graceful_shutdown(Some(std::time::Duration::from_secs(10)));
-    });
+        let handle = axum_server::Handle::new();
+        let shutdown_handle = handle.clone();
 
-    axum_server::bind_rustls(addr, tls_config)
-        .handle(handle)
-        .serve(app.into_make_service())
-        .await?;
+        tokio::spawn(async move {
+            shutdown_signal().await;
+            shutdown_handle.graceful_shutdown(Some(std::time::Duration::from_secs(10)));
+        });
+
+        axum_server::bind_rustls(addr, tls_config)
+            .handle(handle)
+            .serve(app.into_make_service())
+            .await?;
+    } else {
+        tracing::info!("SSL certificates not found, falling back to HTTP");
+        tracing::info!("Listening on http://{}", addr);
+
+        let listener = tokio::net::TcpListener::bind(addr).await?;
+        axum::serve(listener, app)
+            .with_graceful_shutdown(shutdown_signal())
+            .await?;
+    }
 
     tracing::info!("Shutting down scheduler...");
     scheduler.shutdown().await?;
