@@ -112,7 +112,11 @@ All responses follow this standard format:
 
 #### Settings
 - `GET /setting`: Retrieve all settings.
-- `POST /setting/:key`: Create or update a setting.
+- `PATCH /setting/:key`: Update a setting.
+
+#### Key
+- `GET /key`: Get API key age information.
+- `POST /key`: Refresh the API key.
 
 ### Persistence
 

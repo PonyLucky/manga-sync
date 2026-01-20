@@ -231,7 +231,7 @@ paths:
       security:
       - bearer_auth: []
   /setting/{key}:
-    post:
+    patch:
       tags:
       - handlers::setting
       operationId: update_setting
@@ -251,6 +251,12 @@ paths:
       responses:
         '200':
           description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Setting not found
           content:
             application/json:
               schema:
