@@ -3,6 +3,7 @@ use axum::{
     Router,
     middleware,
 };
+use axum_server::tls_rustls::RustlsConfig;
 use tower_http::trace::TraceLayer;
 use std::sync::Arc;
 use tokio::signal;
@@ -69,11 +70,25 @@ async fn main() -> anyhow::Result<()> {
         .layer(middleware::from_fn_with_state(key_manager.clone(), auth_middleware))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:7783").await?;
-    tracing::info!("Listening on {}", listener.local_addr()?);
+    let tls_config = RustlsConfig::from_pem_file(
+        format!("{}/ssl/cert.pem", secret_dir),
+        format!("{}/ssl/key.pem", secret_dir),
+    ).await?;
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 7783));
+    tracing::info!("Listening on https://{}", addr);
+
+    let handle = axum_server::Handle::new();
+    let shutdown_handle = handle.clone();
+
+    tokio::spawn(async move {
+        shutdown_signal().await;
+        shutdown_handle.graceful_shutdown(Some(std::time::Duration::from_secs(10)));
+    });
+
+    axum_server::bind_rustls(addr, tls_config)
+        .handle(handle)
+        .serve(app.into_make_service())
         .await?;
 
     tracing::info!("Shutting down scheduler...");

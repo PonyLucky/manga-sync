@@ -19,11 +19,13 @@ FROM rust:1.92.0-slim
 
 WORKDIR /usr/local/bin
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies (including openssl for TLS cert generation)
+RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates openssl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/src/app/target/release/manga-sync .
 COPY --from=builder /usr/src/app/migrations ./migrations
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
 EXPOSE 7783
 
@@ -32,4 +34,4 @@ EXPOSE 7783
 RUN mkdir -p /usr/local/bin/secret
 VOLUME /usr/local/bin/secret
 
-CMD ["./manga-sync"]
+ENTRYPOINT ["./entrypoint.sh"]

@@ -6,6 +6,7 @@ Dockerhub: <https://hub.docker.com/repository/docker/ponylucky/manga-sync>
 
 ### Key Features
 
+- **HTTPS**: TLS encryption with auto-generated self-signed certificates for secure connections.
 - **Security**: Bearer token authentication with SHA-256 hashing. Automatic key generation and rotation (after 365 days) with warnings after 90 days.
 - **Persistence**: SQLite database with automatic migrations on startup.
 - **Manga Management**: Track manga, sources, and reading history.
@@ -35,6 +36,19 @@ On first startup, the API generates a random key (24–64 characters) if `secret
 - Only the **SHA-256 hash** is stored in `secret/key.pub`.
 - The key is automatically rotated if it's older than 365 days.
 - A warning is logged if the key is older than 90 days.
+
+### HTTPS / TLS
+
+The API uses HTTPS with self-signed certificates for secure connections. On first startup, if `secret/ssl/cert.pem` does not exist, a self-signed certificate is automatically generated and stored in the `secret/ssl/` directory.
+
+**Files generated:**
+- `secret/ssl/cert.pem`: TLS certificate (valid for 365 days)
+- `secret/ssl/key.pem`: TLS private key
+
+**Accepting self-signed certificates:**
+Since the certificates are self-signed, clients need to accept them:
+- **curl**: Use the `-k` flag: `curl -k https://your-server:7783/manga`
+- **Browser extensions**: You may need to visit the API URL directly and accept the certificate warning first.
 
 ### Installation & Usage
 
@@ -72,11 +86,18 @@ The project includes a `Makefile` to simplify common tasks:
 #### Local Development
 
 1. Ensure you have Rust and Cargo installed.
-2. Run the application:
+2. Generate TLS certificates (if not already present):
+   ```bash
+   mkdir -p secret/ssl
+   openssl req -x509 -newkey rsa:4096 -keyout secret/ssl/key.pem \
+       -out secret/ssl/cert.pem -days 365 -nodes \
+       -subj "/CN=manga-sync/O=Local/C=US"
+   ```
+3. Run the application:
    ```bash
    cargo run
    ```
-3. The API will be available at `http://localhost:7783`.
+4. The API will be available at `https://localhost:7783` (you'll need to accept the self-signed certificate).
 
 ### API Reference
 
@@ -120,7 +141,13 @@ All responses follow this standard format:
 
 ### Persistence
 
-The API uses SQLite for storage. The database file `manga.db` and the authentication hash `key.pub` are stored in the `secret/` directory. Database migrations are applied automatically on startup.
+The API uses SQLite for storage. The following files are stored in the `secret/` directory:
+- `manga.db`: SQLite database
+- `key.pub`: SHA-256 hash of the authentication key
+- `ssl/cert.pem`: TLS certificate
+- `ssl/key.pem`: TLS private key
+
+Database migrations are applied automatically on startup.
 
 ## License
 
