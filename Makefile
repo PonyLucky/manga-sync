@@ -33,6 +33,10 @@ docker-run: ## Run the Docker container
 	# Run the container
 	docker run --name manga-sync -p $(DOCKER_PORT):$(LOCAL_PORT) -v $$(pwd)/secret:/usr/local/bin/secret $(IMAGE_NAME)
 
+docker-push: ## Push the image to docker hub
+    docker tag manga-sync ponylucky/manga-sync
+    docker push ponylucky/manga-sync
+
 openapi-update: ## Update openapi.yml automatically from code
 	cargo run --bin gen_openapi > openapi.yml
 

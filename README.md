@@ -2,6 +2,8 @@
 
 A self-hosted REST API written in Rust to manage manga reading progress across devices and sources, for a single user.
 
+Dockerhub: <https://hub.docker.com/repository/docker/ponylucky/manga-sync>
+
 ### Key Features
 
 - **Security**: Bearer token authentication with SHA-256 hashing. Automatic key generation and rotation (after 365 days) with warnings after 90 days.
@@ -61,6 +63,11 @@ The project includes a `Makefile` to simplify common tasks:
    docker run --name manga-sync -p 7783:7783 -v $(pwd)/secret:/usr/local/bin/secret manga-sync
    ```
 3. Watch the console output on the first run to get your generated API key.
+
+##### Pushing to Docker Hub
+
+1. login if not already `docker login`.
+2. Run `make docker-build && make docker-push`.
 
 #### Local Development
 
