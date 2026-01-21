@@ -81,10 +81,17 @@ impl KeyManager {
         Ok(key)
     }
 
+    fn get_file_age(metadata: &fs::Metadata) -> Result<std::time::Duration> {
+        let file_time = metadata.created().or_else(|_| {
+            warn!("Creation time not available, falling back to modification time");
+            metadata.modified()
+        })?;
+        Ok(SystemTime::now().duration_since(file_time)?)
+    }
+
     fn load_and_check_key(&self) -> Result<()> {
         let metadata = fs::metadata(&self.key_path)?;
-        let created = metadata.created()?;
-        let duration = SystemTime::now().duration_since(created)?;
+        let duration = Self::get_file_age(&metadata)?;
         let days = duration.as_secs() / 86400;
 
         info!("API key age: {} days", days);
@@ -115,8 +122,7 @@ impl KeyManager {
     /// Returns the age of the key.pub file in days
     pub fn get_age_in_days(&self) -> Result<u64> {
         let metadata = fs::metadata(&self.key_path)?;
-        let created = metadata.created()?;
-        let duration = SystemTime::now().duration_since(created)?;
+        let duration = Self::get_file_age(&metadata)?;
         Ok(duration.as_secs() / 86400)
     }
 
