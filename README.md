@@ -39,16 +39,51 @@ On first startup, the API generates a random key (24–64 characters) if `secret
 
 ### HTTPS / TLS
 
-The API uses HTTPS with self-signed certificates for secure connections. On first startup, if `secret/ssl/cert.pem` does not exist, a self-signed certificate is automatically generated and stored in the `secret/ssl/` directory.
+The API uses HTTPS for secure connections. By default, if no certificate is found, a self-signed certificate is automatically generated on first startup.
 
-**Files generated:**
-- `secret/ssl/cert.pem`: TLS certificate (valid for 365 days)
+**Certificate files location:**
+- `secret/ssl/cert.pem`: TLS certificate
 - `secret/ssl/key.pem`: TLS private key
 
-**Accepting self-signed certificates:**
-Since the certificates are self-signed, clients need to accept them:
+#### Using Let's Encrypt (Recommended for production)
+
+For production use, you should use a trusted certificate from Let's Encrypt instead of self-signed certificates:
+
+1. Install certbot on your host machine:
+   ```bash
+   # Debian/Ubuntu
+   sudo apt install certbot
+   # Fedora/RHEL
+   sudo dnf install certbot
+   # Arch
+   sudo pacman -S certbot
+   ```
+
+2. Obtain a certificate (replace `your-domain.com` with your actual domain):
+   ```bash
+   sudo certbot certonly --standalone -d your-domain.com
+   ```
+
+3. Copy the certificates to your secret directory:
+   ```bash
+   sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem secret/ssl/cert.pem
+   sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem secret/ssl/key.pem
+   sudo chown $USER:$USER secret/ssl/*.pem
+   ```
+
+4. Set up automatic renewal (certificates expire every 90 days):
+   ```bash
+   # Add a cron job or systemd timer to renew and copy certificates
+   sudo certbot renew --deploy-hook "cp /etc/letsencrypt/live/your-domain.com/fullchain.pem /path/to/secret/ssl/cert.pem && cp /etc/letsencrypt/live/your-domain.com/privkey.pem /path/to/secret/ssl/key.pem && docker restart manga-sync"
+   ```
+
+**Note:** Certbot requires port 80 to be accessible from the internet for domain verification. If you're behind NAT or a firewall, you may need to use the DNS challenge instead (`--preferred-challenges dns`).
+
+#### Using self-signed certificates (Development only)
+
+Self-signed certificates are generated automatically if `secret/ssl/cert.pem` does not exist. Clients need to accept the certificate warning:
 - **curl**: Use the `-k` flag: `curl -k https://your-server:7783/manga`
-- **Browser extensions**: You may need to visit the API URL directly and accept the certificate warning first.
+- **Browser**: Visit the API URL directly and accept the certificate warning, or disable OCSP stapling in `about:config` (Firefox).
 
 ### Installation & Usage
 
